@@ -19,7 +19,7 @@ import (
 
 	pb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 
-	"github.com/fiorix/protoc-gen-cobra/generator"
+	"github.com/tetratelabs/protoc-gen-cobra/generator"
 )
 
 // generatedCodeVersion indicates a version of the generated code.
@@ -56,11 +56,10 @@ var importPkgsByName = importPkg{
 	"cobra":       {ImportPath: "github.com/spf13/cobra", KnownType: "Command"},
 	"context":     {ImportPath: "golang.org/x/net/context", KnownType: "Context"},
 	"credentials": {ImportPath: "google.golang.org/grpc/credentials", KnownType: "AuthInfo"},
-	"envconfig":   {ImportPath: "github.com/kelseyhightower/envconfig", KnownType: "Decoder"},
 	"filepath":    {ImportPath: "path/filepath", KnownType: "WalkFunc"},
 	"grpc":        {ImportPath: "google.golang.org/grpc", KnownType: "ClientConn"},
 	"io":          {ImportPath: "io", KnownType: "Reader"},
-	"iocodec":     {ImportPath: "github.com/fiorix/protoc-gen-cobra/iocodec", KnownType: "Encoder"},
+	"iocodec":     {ImportPath: "github.com/tetratelabs/protoc-gen-cobra/iocodec", KnownType: "Encoder"},
 	"ioutil":      {ImportPath: "io/ioutil", KnownType: "=Discard"},
 	"json":        {ImportPath: "encoding/json", KnownType: "Encoder"},
 	"log":         {ImportPath: "log", KnownType: "Logger"},
@@ -189,26 +188,30 @@ var generateCommandTemplateCode = `
 var _Default{{.Name}}ClientCommandConfig = _New{{.Name}}ClientCommandConfig()
 
 type _{{.Name}}ClientCommandConfig struct {
-	ServerAddr string	` + "`" + `envconfig:"SERVER_ADDR" default:"localhost:8080"` + "`" + `
-	RequestFile string	` + "`" + `envconfig:"REQUEST_FILE"` + "`" + `
-	PrintSampleRequest bool	` + "`" + `envconfig:"PRINT_SAMPLE_REQUEST"` + "`" + `
-	ResponseFormat string	` + "`" + `envconfig:"RESPONSE_FORMAT" default:"json"` + "`" + `
-	Timeout time.Duration	` + "`" + `envconfig:"TIMEOUT" default:"10s"` + "`" + `
-	TLS bool		` + "`" + `envconfig:"TLS"` + "`" + `
-	ServerName string	` + "`" + `envconfig:"TLS_SERVER_NAME"` + "`" + `
-	InsecureSkipVerify bool	` + "`" + `envconfig:"TLS_INSECURE_SKIP_VERIFY"` + "`" + `
-	CACertFile string	` + "`" + `envconfig:"TLS_CA_CERT_FILE"` + "`" + `
-	CertFile string		` + "`" + `envconfig:"TLS_CERT_FILE"` + "`" + `
-	KeyFile string		` + "`" + `envconfig:"TLS_KEY_FILE"` + "`" + `
-	AuthToken string	` + "`" + `envconfig:"AUTH_TOKEN"` + "`" + `
-	AuthTokenType string	` + "`" + `envconfig:"AUTH_TOKEN_TYPE" default:"Bearer"` + "`" + `
-	JWTKey string		` + "`" + `envconfig:"JWT_KEY"` + "`" + `
-	JWTKeyFile string	` + "`" + `envconfig:"JWT_KEY_FILE"` + "`" + `
+	ServerAddr string
+	RequestFile string
+	PrintSampleRequest bool
+	ResponseFormat string
+	Timeout time.Duration
+	TLS bool
+	ServerName string
+	InsecureSkipVerify bool
+	CACertFile string
+	CertFile string
+	KeyFile string
+	AuthToken string
+	AuthTokenType string
+	JWTKey string
+	JWTKeyFile string
 }
 
 func _New{{.Name}}ClientCommandConfig() *_{{.Name}}ClientCommandConfig {
-	c := &_{{.Name}}ClientCommandConfig{}
-	envconfig.Process("", c)
+	c := &_{{.Name}}ClientCommandConfig{
+		ServerAddr: "localhost:8080",
+		ResponseFormat: "json",
+		Timeout: 10 * time.Second,
+		AuthTokenType: "Bearer",
+	}
 	return c
 }
 

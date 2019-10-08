@@ -23,7 +23,7 @@ import fmt "fmt"
 import math "math"
 
 import (
-	iocodec "github.com/fiorix/protoc-gen-cobra/iocodec"
+	iocodec "github.com/tetratelabs/protoc-gen-cobra/iocodec"
 	oauth2 "golang.org/x/oauth2"
 	x509 "crypto/x509"
 	context "golang.org/x/net/context"

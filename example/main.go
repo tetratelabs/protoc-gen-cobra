@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/fiorix/protoc-gen-cobra/example/cmd"
+import "github.com/tetratelabs/protoc-gen-cobra/example/cmd"
 
 func main() {
 	cmd.Execute()

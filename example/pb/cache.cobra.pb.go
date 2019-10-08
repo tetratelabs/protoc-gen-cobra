@@ -17,7 +17,7 @@ import (
 	x509 "crypto/x509"
 	context "golang.org/x/net/context"
 	credentials "google.golang.org/grpc/credentials"
-	iocodec "github.com/fiorix/protoc-gen-cobra/iocodec"
+	iocodec "github.com/tetratelabs/protoc-gen-cobra/iocodec"
 	json "encoding/json"
 	log "log"
 	net "net"
