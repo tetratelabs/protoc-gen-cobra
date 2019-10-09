@@ -11,11 +11,11 @@ package client
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 
 	pb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 
@@ -72,6 +72,7 @@ var importPkgsByName = importPkg{
 	"time":        {ImportPath: "time", KnownType: "Time"},
 	"tls":         {ImportPath: "crypto/tls", KnownType: "Config"},
 	"x509":        {ImportPath: "crypto/x509", KnownType: "Certificate"},
+	"fmt":         {ImportPath: "fmt", KnownType: "Writer"},
 }
 var sortedImportPkgNames = make([]string, 0, len(importPkgsByName))
 
@@ -94,16 +95,6 @@ func (c *client) Generate(file *generator.FileDescriptor) {
 		return
 	}
 
-	c.P("// Reference imports to suppress errors if they are not otherwise used.")
-	for _, n := range sortedImportPkgNames {
-		v := importPkgsByName[n]
-		if strings.HasPrefix(v.KnownType, "=") {
-			c.P("var _ = ", v.UniqueName, ".", v.KnownType[1:])
-		} else {
-			c.P("var _ ", v.UniqueName, ".", v.KnownType)
-		}
-	}
-
 	// Assert version compatibility.
 	c.P("// This is a compile-time assertion to ensure that this generated file")
 	c.P("// is compatible with the grpc package it is being compiled against.")
@@ -120,7 +111,12 @@ func (c *client) GenerateImports(file *generator.FileDescriptor, imports []*gene
 	if len(file.FileDescriptorProto.Service) == 0 {
 		return
 	}
+
 	c.P("import (")
+
+	// proto import is hard coded
+	c.P("proto ", strconv.Quote(c.gen.ImportPrefix+"github.com/golang/protobuf/proto"))
+
 	for _, n := range sortedImportPkgNames {
 		v := importPkgsByName[n]
 		c.P(v.UniqueName, " ", strconv.Quote(path.Join(c.gen.ImportPrefix, v.ImportPath)))
@@ -156,7 +152,6 @@ func (c *client) GenerateImports(file *generator.FileDescriptor, imports []*gene
 	for _, n := range importedPackageNames {
 		c.P(n, " ", importedPackagesByName[n])
 	}
-
 	c.P(")")
 	c.P()
 }
@@ -371,10 +366,13 @@ func (c *client) generateCommand(servName string) {
 }
 
 var generateSubcommandTemplateCode = `
-var _{{.FullName}}ClientCommand = &cobra.Command{
-	Use: "{{.UseName}}",
-	Long: "{{.Name}} client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-	Example: ` + "`" + `
+func _{{.FullName}}ClientCommand() *cobra.Command {
+	reqArgs := {{ .InitializeRequestFlagsObj }}
+
+	cmd := &cobra.Command{
+		Use: "{{.UseName}}",
+		Long: "{{.Name}} client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
+		Example: ` + "`" + `
 Save a sample request to a file (or refer to your protobuf descriptor to create one):
 	{{.UseName}} -p > req.json
 
@@ -385,76 +383,84 @@ Authenticate using the Authorization header (requires transport security):
 	export AUTH_TOKEN=your_access_token
 	export SERVER_ADDR=api.example.com:443
 	echo '{json}' | {{.UseName}} --tls` + "`" + `,
-	Run: func(cmd *cobra.Command, args []string) {
-		var v {{ with .InputPackage }}{{ . }}.{{ end }}{{.InputType}}
-		err := _{{.ServiceName}}RoundTrip(v, func(cli {{.ServiceName}}Client, in iocodec.Decoder, out iocodec.Encoder) error {
-{{if .ClientStream}}
-			stream, err := cli.{{.Name}}(context.Background())
-			if err != nil {
-				return err
-			}
-			for {
-				err = in.Decode(&v)
-				if err == io.EOF {
-					stream.CloseSend()
-					break
-				}
+		Run: func(cmd *cobra.Command, args []string) {
+			var v {{ with .InputPackage }}{{ . }}.{{ end }}{{.InputType}}
+			err := _{{.ServiceName}}RoundTrip(v, func(cli {{.ServiceName}}Client, in iocodec.Decoder, out iocodec.Encoder) error {
+	{{if .ClientStream}}
+				stream, err := cli.{{.Name}}(context.Background())
 				if err != nil {
 					return err
 				}
-				err = stream.Send(&v)
+				for {
+					err = in.Decode(&v)
+					if err == io.EOF {
+						stream.CloseSend()
+						break
+					}
+					if err != nil {
+						return err
+					}
+					err = stream.Send(&v)
+					if err != nil {
+						return err
+					}
+				}
+	{{else}}
+				err := in.Decode(&v)
 				if err != nil {
 					return err
 				}
-			}
-{{else}}
-			err := in.Decode(&v)
-			if err != nil {
-				return err
-			}
-			{{if .ServerStream}}
-			stream, err := cli.{{.Name}}(context.Background(), &v)
-			{{else}}
-			resp, err := cli.{{.Name}}(context.Background(), &v)
-			{{end}}
-			if err != nil {
-				return err
-			}
-{{end}}
-{{if .ServerStream}}
-			for {
-				v, err := stream.Recv()
-				if err == io.EOF {
-					break
-				}
+				{{if .ServerStream}}
+				stream, err := cli.{{.Name}}(context.Background(), &v)
+				{{else}}
+				proto.Merge(&v, reqArgs)
+				resp, err := cli.{{.Name}}(context.Background(), &v)
+				{{end}}
 				if err != nil {
 					return err
 				}
-				err = out.Encode(v)
+	{{end}}
+	{{if .ServerStream}}
+				for {
+					v, err := stream.Recv()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						return err
+					}
+					err = out.Encode(v)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+	{{else}}
+				{{if .ClientStream}}
+				resp, err := stream.CloseAndRecv()
 				if err != nil {
 					return err
 				}
-			}
-			return nil
-{{else}}
-			{{if .ClientStream}}
-			resp, err := stream.CloseAndRecv()
+				{{end}}
+				return out.Encode(resp)
+	{{end}}
+			})
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
-			{{end}}
-			return out.Encode(resp)
-{{end}}
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
-	},
+		},
+	}
+
+	{{ range .RequestFlags }}
+	cmd{{ . }}{{ end }}
+
+	return cmd
 }
 
 func init() {
-	{{.ServiceName}}ClientCommand.AddCommand(_{{.FullName}}ClientCommand)
-	_Default{{.ServiceName}}ClientCommandConfig.AddFlags(_{{.FullName}}ClientCommand.Flags())
+	cmd := _{{.FullName}}ClientCommand()
+	{{.ServiceName}}ClientCommand.AddCommand(cmd)
+	_Default{{.ServiceName}}ClientCommandConfig.AddFlags(cmd.Flags())
 }
 `
 
@@ -471,29 +477,39 @@ func (c *client) generateSubcommand(servName string, file *generator.FileDescrip
 	if reservedClientName[methName] {
 		methName += "_"
 	}
+
 	importName, inputPackage, inputType := inputNames(method.GetInputType())
 	if inputPackage == file.PackageName() {
 		importName = ""
 	}
+
+	types := make(protoTypeCache)
+	inputDesc, _, _ := types.byName(file.MessageType, inputType, prefix("// ", c.P))
+	obj, reqArgFlags := c.generateRequestFlags(file, inputDesc, types)
+
 	var b bytes.Buffer
 	err := generateSubcommandTemplate.Execute(&b, struct {
-		Name         string
-		UseName      string
-		ServiceName  string
-		FullName     string
-		InputPackage string
-		InputType    string
-		ClientStream bool
-		ServerStream bool
+		Name                      string
+		UseName                   string
+		ServiceName               string
+		FullName                  string
+		InputPackage              string
+		InputType                 string
+		InitializeRequestFlagsObj string
+		RequestFlags              []string
+		ClientStream              bool
+		ServerStream              bool
 	}{
-		Name:         methName,
-		UseName:      strings.ToLower(methName),
-		ServiceName:  servName,
-		FullName:     servName + methName,
-		InputPackage: importName,
-		InputType:    inputType,
-		ClientStream: method.GetClientStreaming(),
-		ServerStream: method.GetServerStreaming(),
+		Name:                      methName,
+		UseName:                   strings.ToLower(methName),
+		ServiceName:               servName,
+		FullName:                  servName + methName,
+		InputPackage:              importName,
+		InputType:                 inputType,
+		InitializeRequestFlagsObj: obj,
+		RequestFlags:              reqArgFlags,
+		ClientStream:              method.GetClientStreaming(),
+		ServerStream:              method.GetServerStreaming(),
 	})
 	if err != nil {
 		c.gen.Error(err, "exec subcmd template")
