@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/fiorix/protoc-gen-cobra/example/pb"
+	"github.com/tetratelabs/protoc-gen-cobra/example/pb"
 )
 
 func main() {
@@ -19,6 +19,8 @@ func main() {
 	pb.RegisterBankServer(srv, NewBank())
 	pb.RegisterCacheServer(srv, NewCache())
 	pb.RegisterTimerServer(srv, NewTimer())
+	pb.RegisterCRUDServer(srv, NewCRUD())
+	pb.RegisterNestedMessagesServer(srv, NestedMessage{})
 	err = srv.Serve(ln)
 	if err != nil {
 		log.Fatal(err)

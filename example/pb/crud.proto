@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package pb;
+
+service CRUD {
+    rpc Create(CreateCRUD) returns (CRUDObject);
+    rpc Get(GetCRUD) returns (CRUDObject);
+    rpc Update(CRUDObject) returns (CRUDObject);
+    rpc Delete(CRUDObject) returns (Empty);
+}
+
+message CRUDObject {
+    string name = 1;
+    string value = 2;
+}
+
+message CreateCRUD {
+    string name = 1;
+    string value = 2;
+}
+
+message GetCRUD {
+    string name = 1;
+}
+
+message Empty {}
