@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package pb;
+
+service MapList {
+    rpc Method(MapListRequest) returns (MapListResponse);
+}
+
+message MapListRequest{
+    map<string, string> map_field = 1;
+    repeated string list_field = 2;
+}
+
+message MapListResponse {
+    map<string, string> map_field = 1;
+    repeated string list_field = 2;
+}
