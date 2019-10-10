@@ -14,6 +14,7 @@ var DefaultDecoders = DecoderGroup{
 	"xml":  DecoderMakerFunc(func(r io.Reader) Decoder { return xml.NewDecoder(r) }),
 	"json": DecoderMakerFunc(func(r io.Reader) Decoder { return json.NewDecoder(r) }),
 	"yaml": DecoderMakerFunc(func(r io.Reader) Decoder { return &yamlDecoder{r} }),
+	"noop": DecoderMakerFunc(func(r io.Reader) Decoder { return noop{} }),
 }
 
 type (
@@ -33,6 +34,8 @@ type (
 	// DecoderMakerFunc is an adapter for creating DecoderMakers
 	// from functions.
 	DecoderMakerFunc func(r io.Reader) Decoder
+
+	noop struct{}
 )
 
 // NewDecoder implements the DecoderMaker interface.
@@ -50,4 +53,8 @@ func (yd *yamlDecoder) Decode(v interface{}) error {
 		return err
 	}
 	return yaml.Unmarshal(b, v)
+}
+
+func (noop) Decode(v interface{}) error {
+	return nil
 }

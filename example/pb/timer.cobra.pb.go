@@ -35,6 +35,7 @@ var _DefaultTimerClientCommandConfig = _NewTimerClientCommandConfig()
 type _TimerClientCommandConfig struct {
 	ServerAddr         string
 	RequestFile        string
+	Stdin              bool
 	PrintSampleRequest bool
 	ResponseFormat     string
 	Timeout            time.Duration
@@ -63,6 +64,7 @@ func _NewTimerClientCommandConfig() *_TimerClientCommandConfig {
 func (o *_TimerClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.ServerAddr, "server-addr", "s", o.ServerAddr, "server address in form of host:port")
 	fs.StringVarP(&o.RequestFile, "request-file", "f", o.RequestFile, "client request file (must be json, yaml, or xml); use \"-\" for stdin + json")
+	fs.BoolVar(&o.Stdin, "stdin", o.Stdin, "read client request from STDIN; alternative for '-f -'")
 	fs.BoolVarP(&o.PrintSampleRequest, "print-sample-request", "p", o.PrintSampleRequest, "print sample request file and exit")
 	fs.StringVarP(&o.ResponseFormat, "response-format", "o", o.ResponseFormat, "response format (json, prettyjson, yaml, or xml)")
 	fs.DurationVar(&o.Timeout, "timeout", o.Timeout, "client connection timeout")
@@ -80,6 +82,10 @@ func (o *_TimerClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 
 var TimerClientCommand = &cobra.Command{
 	Use: "timer",
+}
+
+func init() {
+	_DefaultTimerClientCommandConfig.AddFlags(TimerClientCommand.PersistentFlags())
 }
 
 func _DialTimer() (*grpc.ClientConn, TimerClient, error) {
@@ -169,10 +175,11 @@ func _TimerRoundTrip(sample interface{}, fn _TimerRoundTripFunc) error {
 	if cfg.PrintSampleRequest {
 		return em.NewEncoder(os.Stdout).Encode(sample)
 	}
+	// read the input request, first from stdin, then from a file, otherwise from args only
 	var d iocodec.Decoder
-	if cfg.RequestFile == "" || cfg.RequestFile == "-" {
+	if cfg.Stdin || cfg.RequestFile == "-" {
 		d = iocodec.DefaultDecoders["json"].NewDecoder(os.Stdin)
-	} else {
+	} else if cfg.RequestFile != "" {
 		f, err := os.Open(cfg.RequestFile)
 		if err != nil {
 			return fmt.Errorf("request file: %v", err)
@@ -187,6 +194,8 @@ func _TimerRoundTrip(sample interface{}, fn _TimerRoundTripFunc) error {
 			return fmt.Errorf("invalid request file format: %q", ext)
 		}
 		d = dm.NewDecoder(f)
+	} else {
+		d = iocodec.DefaultDecoders["noop"].NewDecoder(os.Stdin)
 	}
 	conn, client, err := _DialTimer()
 	if err != nil {
@@ -198,7 +207,7 @@ func _TimerRoundTrip(sample interface{}, fn _TimerRoundTripFunc) error {
 
 // searching for TickRequest
 // * comparing against TickRequest inserting into cache:
-// map[TickRequest:{0xc000117590 true false}]
+// map[TickRequest:{0xc000111590 true false}]
 // generating request initialization for TickRequest
 // generating initialization for TickRequest with prefix "" which has 1 fields
 // found non-message field "interval"
@@ -208,19 +217,9 @@ func _TimerTickClientCommand() *cobra.Command {
 	reqArgs := &TickRequest{}
 
 	cmd := &cobra.Command{
-		Use:  "tick",
-		Long: "Tick client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	tick -p > req.json
-
-Submit request using file:
-	tick -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | tick --tls`,
+		Use:     "tick",
+		Long:    "Tick client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v TickRequest
 			err := _TimerRoundTrip(v, func(cli TimerClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -266,5 +265,4 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _TimerTickClientCommand()
 	TimerClientCommand.AddCommand(cmd)
-	_DefaultTimerClientCommandConfig.AddFlags(cmd.Flags())
 }

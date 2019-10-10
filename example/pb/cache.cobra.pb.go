@@ -36,6 +36,7 @@ var _DefaultCacheClientCommandConfig = _NewCacheClientCommandConfig()
 type _CacheClientCommandConfig struct {
 	ServerAddr         string
 	RequestFile        string
+	Stdin              bool
 	PrintSampleRequest bool
 	ResponseFormat     string
 	Timeout            time.Duration
@@ -64,6 +65,7 @@ func _NewCacheClientCommandConfig() *_CacheClientCommandConfig {
 func (o *_CacheClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.ServerAddr, "server-addr", "s", o.ServerAddr, "server address in form of host:port")
 	fs.StringVarP(&o.RequestFile, "request-file", "f", o.RequestFile, "client request file (must be json, yaml, or xml); use \"-\" for stdin + json")
+	fs.BoolVar(&o.Stdin, "stdin", o.Stdin, "read client request from STDIN; alternative for '-f -'")
 	fs.BoolVarP(&o.PrintSampleRequest, "print-sample-request", "p", o.PrintSampleRequest, "print sample request file and exit")
 	fs.StringVarP(&o.ResponseFormat, "response-format", "o", o.ResponseFormat, "response format (json, prettyjson, yaml, or xml)")
 	fs.DurationVar(&o.Timeout, "timeout", o.Timeout, "client connection timeout")
@@ -81,6 +83,10 @@ func (o *_CacheClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 
 var CacheClientCommand = &cobra.Command{
 	Use: "cache",
+}
+
+func init() {
+	_DefaultCacheClientCommandConfig.AddFlags(CacheClientCommand.PersistentFlags())
 }
 
 func _DialCache() (*grpc.ClientConn, CacheClient, error) {
@@ -170,10 +176,11 @@ func _CacheRoundTrip(sample interface{}, fn _CacheRoundTripFunc) error {
 	if cfg.PrintSampleRequest {
 		return em.NewEncoder(os.Stdout).Encode(sample)
 	}
+	// read the input request, first from stdin, then from a file, otherwise from args only
 	var d iocodec.Decoder
-	if cfg.RequestFile == "" || cfg.RequestFile == "-" {
+	if cfg.Stdin || cfg.RequestFile == "-" {
 		d = iocodec.DefaultDecoders["json"].NewDecoder(os.Stdin)
-	} else {
+	} else if cfg.RequestFile != "" {
 		f, err := os.Open(cfg.RequestFile)
 		if err != nil {
 			return fmt.Errorf("request file: %v", err)
@@ -188,6 +195,8 @@ func _CacheRoundTrip(sample interface{}, fn _CacheRoundTripFunc) error {
 			return fmt.Errorf("invalid request file format: %q", ext)
 		}
 		d = dm.NewDecoder(f)
+	} else {
+		d = iocodec.DefaultDecoders["noop"].NewDecoder(os.Stdin)
 	}
 	conn, client, err := _DialCache()
 	if err != nil {
@@ -199,7 +208,7 @@ func _CacheRoundTrip(sample interface{}, fn _CacheRoundTripFunc) error {
 
 // searching for SetRequest
 // * comparing against SetRequest inserting into cache:
-// map[SetRequest:{0xc0001163c0 true false}]
+// map[SetRequest:{0xc0001103c0 true false}]
 // generating request initialization for SetRequest
 // generating initialization for SetRequest with prefix "" which has 2 fields
 // found non-message field "key"
@@ -210,19 +219,9 @@ func _CacheSetClientCommand() *cobra.Command {
 	reqArgs := &SetRequest{}
 
 	cmd := &cobra.Command{
-		Use:  "set",
-		Long: "Set client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	set -p > req.json
-
-Submit request using file:
-	set -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | set --tls`,
+		Use:     "set",
+		Long:    "Set client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v SetRequest
 			err := _CacheRoundTrip(v, func(cli CacheClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -257,7 +256,6 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _CacheSetClientCommand()
 	CacheClientCommand.AddCommand(cmd)
-	_DefaultCacheClientCommandConfig.AddFlags(cmd.Flags())
 }
 
 // searching for GetRequest
@@ -266,7 +264,7 @@ func init() {
 //   comparing against SetResponse
 //     searching for GetRequest
 // * comparing against GetRequest inserting into cache:
-// map[GetRequest:{0xc0001165a0 true false}]
+// map[GetRequest:{0xc0001105a0 true false}]
 // generating request initialization for GetRequest
 // generating initialization for GetRequest with prefix "" which has 1 fields
 // found non-message field "key"
@@ -276,19 +274,9 @@ func _CacheGetClientCommand() *cobra.Command {
 	reqArgs := &GetRequest{}
 
 	cmd := &cobra.Command{
-		Use:  "get",
-		Long: "Get client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	get -p > req.json
-
-Submit request using file:
-	get -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | get --tls`,
+		Use:     "get",
+		Long:    "Get client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v GetRequest
 			err := _CacheRoundTrip(v, func(cli CacheClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -322,12 +310,11 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _CacheGetClientCommand()
 	CacheClientCommand.AddCommand(cmd)
-	_DefaultCacheClientCommandConfig.AddFlags(cmd.Flags())
 }
 
 // searching for SetRequest
 // * comparing against SetRequest inserting into cache:
-// map[SetRequest:{0xc0001163c0 true false}]
+// map[SetRequest:{0xc0001103c0 true false}]
 // generating request initialization for SetRequest
 // generating initialization for SetRequest with prefix "" which has 2 fields
 // found non-message field "key"
@@ -338,19 +325,9 @@ func _CacheMultiSetClientCommand() *cobra.Command {
 	reqArgs := &SetRequest{}
 
 	cmd := &cobra.Command{
-		Use:  "multiset",
-		Long: "MultiSet client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	multiset -p > req.json
-
-Submit request using file:
-	multiset -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | multiset --tls`,
+		Use:     "multiset",
+		Long:    "MultiSet client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v SetRequest
 			err := _CacheRoundTrip(v, func(cli CacheClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -397,7 +374,6 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _CacheMultiSetClientCommand()
 	CacheClientCommand.AddCommand(cmd)
-	_DefaultCacheClientCommandConfig.AddFlags(cmd.Flags())
 }
 
 // searching for GetRequest
@@ -406,7 +382,7 @@ func init() {
 //   comparing against SetResponse
 //     searching for GetRequest
 // * comparing against GetRequest inserting into cache:
-// map[GetRequest:{0xc0001165a0 true false}]
+// map[GetRequest:{0xc0001105a0 true false}]
 // generating request initialization for GetRequest
 // generating initialization for GetRequest with prefix "" which has 1 fields
 // found non-message field "key"
@@ -416,19 +392,9 @@ func _CacheMultiGetClientCommand() *cobra.Command {
 	reqArgs := &GetRequest{}
 
 	cmd := &cobra.Command{
-		Use:  "multiget",
-		Long: "MultiGet client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	multiget -p > req.json
-
-Submit request using file:
-	multiget -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | multiget --tls`,
+		Use:     "multiget",
+		Long:    "MultiGet client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v GetRequest
 			err := _CacheRoundTrip(v, func(cli CacheClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -482,5 +448,4 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _CacheMultiGetClientCommand()
 	CacheClientCommand.AddCommand(cmd)
-	_DefaultCacheClientCommandConfig.AddFlags(cmd.Flags())
 }

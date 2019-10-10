@@ -183,21 +183,22 @@ var generateCommandTemplateCode = `
 var _Default{{.Name}}ClientCommandConfig = _New{{.Name}}ClientCommandConfig()
 
 type _{{.Name}}ClientCommandConfig struct {
-	ServerAddr string
-	RequestFile string
+	ServerAddr         string
+	RequestFile        string
+	Stdin              bool
 	PrintSampleRequest bool
-	ResponseFormat string
-	Timeout time.Duration
-	TLS bool
-	ServerName string
+	ResponseFormat     string
+	Timeout            time.Duration
+	TLS                bool
+	ServerName         string
 	InsecureSkipVerify bool
-	CACertFile string
-	CertFile string
-	KeyFile string
-	AuthToken string
-	AuthTokenType string
-	JWTKey string
-	JWTKeyFile string
+	CACertFile         string
+	CertFile           string
+	KeyFile            string
+	AuthToken          string
+	AuthTokenType      string
+	JWTKey             string
+	JWTKeyFile         string
 }
 
 func _New{{.Name}}ClientCommandConfig() *_{{.Name}}ClientCommandConfig {
@@ -213,6 +214,7 @@ func _New{{.Name}}ClientCommandConfig() *_{{.Name}}ClientCommandConfig {
 func (o *_{{.Name}}ClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.ServerAddr, "server-addr", "s", o.ServerAddr, "server address in form of host:port")
 	fs.StringVarP(&o.RequestFile, "request-file", "f", o.RequestFile, "client request file (must be json, yaml, or xml); use \"-\" for stdin + json")
+	fs.BoolVar(&o.Stdin, "stdin", o.Stdin, "read client request from STDIN; alternative for '-f -'")
 	fs.BoolVarP(&o.PrintSampleRequest, "print-sample-request", "p", o.PrintSampleRequest, "print sample request file and exit")
 	fs.StringVarP(&o.ResponseFormat, "response-format", "o", o.ResponseFormat, "response format (json, prettyjson, yaml, or xml)")
 	fs.DurationVar(&o.Timeout, "timeout", o.Timeout, "client connection timeout")
@@ -230,6 +232,10 @@ func (o *_{{.Name}}ClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 
 var {{.Name}}ClientCommand = &cobra.Command{
 	Use: "{{.UseName}}",
+}
+
+func init() {
+	_Default{{.Name}}ClientCommandConfig.AddFlags({{.Name}}ClientCommand.PersistentFlags())
 }
 
 func _Dial{{.Name}}() (*grpc.ClientConn, {{.Name}}Client, error) {
@@ -319,10 +325,11 @@ func _{{.Name}}RoundTrip(sample interface{}, fn _{{.Name}}RoundTripFunc) error {
 	if cfg.PrintSampleRequest {
 		return em.NewEncoder(os.Stdout).Encode(sample)
 	}
+	// read the input request, first from stdin, then from a file, otherwise from args only
 	var d iocodec.Decoder
-	if cfg.RequestFile == "" || cfg.RequestFile == "-" {
+	if cfg.Stdin || cfg.RequestFile == "-" {
 		d = iocodec.DefaultDecoders["json"].NewDecoder(os.Stdin)
-	} else {
+	} else if cfg.RequestFile != "" {
 		f, err := os.Open(cfg.RequestFile)
 		if err != nil {
 			return fmt.Errorf("request file: %v", err)
@@ -337,6 +344,8 @@ func _{{.Name}}RoundTrip(sample interface{}, fn _{{.Name}}RoundTripFunc) error {
 			return fmt.Errorf("invalid request file format: %q", ext)
 		}
 		d = dm.NewDecoder(f)
+	} else {
+		d = iocodec.DefaultDecoders["noop"].NewDecoder(os.Stdin)
 	}
 	conn, client, err := _Dial{{.Name}}()
 	if err != nil {
@@ -371,18 +380,8 @@ func _{{.FullName}}ClientCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use: "{{.UseName}}",
-		Long: "{{.Name}} client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: ` + "`" + `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	{{.UseName}} -p > req.json
-
-Submit request using file:
-	{{.UseName}} -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | {{.UseName}} --tls` + "`" + `,
+		Long: "{{ .Name }} client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v {{ with .InputPackage }}{{ . }}.{{ end }}{{.InputType}}
 			err := _{{.ServiceName}}RoundTrip(v, func(cli {{.ServiceName}}Client, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -460,7 +459,6 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _{{.FullName}}ClientCommand()
 	{{.ServiceName}}ClientCommand.AddCommand(cmd)
-	_Default{{.ServiceName}}ClientCommandConfig.AddFlags(cmd.Flags())
 }
 `
 

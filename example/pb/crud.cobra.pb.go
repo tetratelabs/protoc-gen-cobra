@@ -35,6 +35,7 @@ var _DefaultCRUDClientCommandConfig = _NewCRUDClientCommandConfig()
 type _CRUDClientCommandConfig struct {
 	ServerAddr         string
 	RequestFile        string
+	Stdin              bool
 	PrintSampleRequest bool
 	ResponseFormat     string
 	Timeout            time.Duration
@@ -63,6 +64,7 @@ func _NewCRUDClientCommandConfig() *_CRUDClientCommandConfig {
 func (o *_CRUDClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.ServerAddr, "server-addr", "s", o.ServerAddr, "server address in form of host:port")
 	fs.StringVarP(&o.RequestFile, "request-file", "f", o.RequestFile, "client request file (must be json, yaml, or xml); use \"-\" for stdin + json")
+	fs.BoolVar(&o.Stdin, "stdin", o.Stdin, "read client request from STDIN; alternative for '-f -'")
 	fs.BoolVarP(&o.PrintSampleRequest, "print-sample-request", "p", o.PrintSampleRequest, "print sample request file and exit")
 	fs.StringVarP(&o.ResponseFormat, "response-format", "o", o.ResponseFormat, "response format (json, prettyjson, yaml, or xml)")
 	fs.DurationVar(&o.Timeout, "timeout", o.Timeout, "client connection timeout")
@@ -80,6 +82,10 @@ func (o *_CRUDClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 
 var CRUDClientCommand = &cobra.Command{
 	Use: "crud",
+}
+
+func init() {
+	_DefaultCRUDClientCommandConfig.AddFlags(CRUDClientCommand.PersistentFlags())
 }
 
 func _DialCRUD() (*grpc.ClientConn, CRUDClient, error) {
@@ -169,10 +175,11 @@ func _CRUDRoundTrip(sample interface{}, fn _CRUDRoundTripFunc) error {
 	if cfg.PrintSampleRequest {
 		return em.NewEncoder(os.Stdout).Encode(sample)
 	}
+	// read the input request, first from stdin, then from a file, otherwise from args only
 	var d iocodec.Decoder
-	if cfg.RequestFile == "" || cfg.RequestFile == "-" {
+	if cfg.Stdin || cfg.RequestFile == "-" {
 		d = iocodec.DefaultDecoders["json"].NewDecoder(os.Stdin)
-	} else {
+	} else if cfg.RequestFile != "" {
 		f, err := os.Open(cfg.RequestFile)
 		if err != nil {
 			return fmt.Errorf("request file: %v", err)
@@ -187,6 +194,8 @@ func _CRUDRoundTrip(sample interface{}, fn _CRUDRoundTripFunc) error {
 			return fmt.Errorf("invalid request file format: %q", ext)
 		}
 		d = dm.NewDecoder(f)
+	} else {
+		d = iocodec.DefaultDecoders["noop"].NewDecoder(os.Stdin)
 	}
 	conn, client, err := _DialCRUD()
 	if err != nil {
@@ -200,7 +209,7 @@ func _CRUDRoundTrip(sample interface{}, fn _CRUDRoundTripFunc) error {
 //   comparing against CRUDObject
 //     searching for CreateCRUD
 // * comparing against CreateCRUD inserting into cache:
-// map[CreateCRUD:{0xc000116960 true false}]
+// map[CreateCRUD:{0xc000110960 true false}]
 // generating request initialization for CreateCRUD
 // generating initialization for CreateCRUD with prefix "" which has 2 fields
 // found non-message field "name"
@@ -211,19 +220,9 @@ func _CRUDCreateClientCommand() *cobra.Command {
 	reqArgs := &CreateCRUD{}
 
 	cmd := &cobra.Command{
-		Use:  "create",
-		Long: "Create client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	create -p > req.json
-
-Submit request using file:
-	create -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | create --tls`,
+		Use:     "create",
+		Long:    "Create client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v CreateCRUD
 			err := _CRUDRoundTrip(v, func(cli CRUDClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -258,7 +257,6 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _CRUDCreateClientCommand()
 	CRUDClientCommand.AddCommand(cmd)
-	_DefaultCRUDClientCommandConfig.AddFlags(cmd.Flags())
 }
 
 // searching for GetCRUD
@@ -267,7 +265,7 @@ func init() {
 //   comparing against CreateCRUD
 //     searching for GetCRUD
 // * comparing against GetCRUD inserting into cache:
-// map[GetCRUD:{0xc000116a50 true false}]
+// map[GetCRUD:{0xc000110a50 true false}]
 // generating request initialization for GetCRUD
 // generating initialization for GetCRUD with prefix "" which has 1 fields
 // found non-message field "name"
@@ -277,19 +275,9 @@ func _CRUDGetClientCommand() *cobra.Command {
 	reqArgs := &GetCRUD{}
 
 	cmd := &cobra.Command{
-		Use:  "get",
-		Long: "Get client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	get -p > req.json
-
-Submit request using file:
-	get -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | get --tls`,
+		Use:     "get",
+		Long:    "Get client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v GetCRUD
 			err := _CRUDRoundTrip(v, func(cli CRUDClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -323,12 +311,11 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _CRUDGetClientCommand()
 	CRUDClientCommand.AddCommand(cmd)
-	_DefaultCRUDClientCommandConfig.AddFlags(cmd.Flags())
 }
 
 // searching for CRUDObject
 // * comparing against CRUDObject inserting into cache:
-// map[CRUDObject:{0xc000116870 true false}]
+// map[CRUDObject:{0xc000110870 true false}]
 // generating request initialization for CRUDObject
 // generating initialization for CRUDObject with prefix "" which has 2 fields
 // found non-message field "name"
@@ -339,19 +326,9 @@ func _CRUDUpdateClientCommand() *cobra.Command {
 	reqArgs := &CRUDObject{}
 
 	cmd := &cobra.Command{
-		Use:  "update",
-		Long: "Update client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	update -p > req.json
-
-Submit request using file:
-	update -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | update --tls`,
+		Use:     "update",
+		Long:    "Update client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v CRUDObject
 			err := _CRUDRoundTrip(v, func(cli CRUDClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -386,12 +363,11 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _CRUDUpdateClientCommand()
 	CRUDClientCommand.AddCommand(cmd)
-	_DefaultCRUDClientCommandConfig.AddFlags(cmd.Flags())
 }
 
 // searching for CRUDObject
 // * comparing against CRUDObject inserting into cache:
-// map[CRUDObject:{0xc000116870 true false}]
+// map[CRUDObject:{0xc000110870 true false}]
 // generating request initialization for CRUDObject
 // generating initialization for CRUDObject with prefix "" which has 2 fields
 // found non-message field "name"
@@ -402,19 +378,9 @@ func _CRUDDeleteClientCommand() *cobra.Command {
 	reqArgs := &CRUDObject{}
 
 	cmd := &cobra.Command{
-		Use:  "delete",
-		Long: "Delete client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	delete -p > req.json
-
-Submit request using file:
-	delete -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | delete --tls`,
+		Use:     "delete",
+		Long:    "Delete client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v CRUDObject
 			err := _CRUDRoundTrip(v, func(cli CRUDClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -449,5 +415,4 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _CRUDDeleteClientCommand()
 	CRUDClientCommand.AddCommand(cmd)
-	_DefaultCRUDClientCommandConfig.AddFlags(cmd.Flags())
 }

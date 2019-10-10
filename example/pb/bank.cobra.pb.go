@@ -59,6 +59,7 @@ var _DefaultBankClientCommandConfig = _NewBankClientCommandConfig()
 type _BankClientCommandConfig struct {
 	ServerAddr         string
 	RequestFile        string
+	Stdin              bool
 	PrintSampleRequest bool
 	ResponseFormat     string
 	Timeout            time.Duration
@@ -87,6 +88,7 @@ func _NewBankClientCommandConfig() *_BankClientCommandConfig {
 func (o *_BankClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&o.ServerAddr, "server-addr", "s", o.ServerAddr, "server address in form of host:port")
 	fs.StringVarP(&o.RequestFile, "request-file", "f", o.RequestFile, "client request file (must be json, yaml, or xml); use \"-\" for stdin + json")
+	fs.BoolVar(&o.Stdin, "stdin", o.Stdin, "read client request from STDIN; alternative for '-f -'")
 	fs.BoolVarP(&o.PrintSampleRequest, "print-sample-request", "p", o.PrintSampleRequest, "print sample request file and exit")
 	fs.StringVarP(&o.ResponseFormat, "response-format", "o", o.ResponseFormat, "response format (json, prettyjson, yaml, or xml)")
 	fs.DurationVar(&o.Timeout, "timeout", o.Timeout, "client connection timeout")
@@ -104,6 +106,10 @@ func (o *_BankClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 
 var BankClientCommand = &cobra.Command{
 	Use: "bank",
+}
+
+func init() {
+	_DefaultBankClientCommandConfig.AddFlags(BankClientCommand.PersistentFlags())
 }
 
 func _DialBank() (*grpc.ClientConn, BankClient, error) {
@@ -193,10 +199,11 @@ func _BankRoundTrip(sample interface{}, fn _BankRoundTripFunc) error {
 	if cfg.PrintSampleRequest {
 		return em.NewEncoder(os.Stdout).Encode(sample)
 	}
+	// read the input request, first from stdin, then from a file, otherwise from args only
 	var d iocodec.Decoder
-	if cfg.RequestFile == "" || cfg.RequestFile == "-" {
+	if cfg.Stdin || cfg.RequestFile == "-" {
 		d = iocodec.DefaultDecoders["json"].NewDecoder(os.Stdin)
-	} else {
+	} else if cfg.RequestFile != "" {
 		f, err := os.Open(cfg.RequestFile)
 		if err != nil {
 			return fmt.Errorf("request file: %v", err)
@@ -211,6 +218,8 @@ func _BankRoundTrip(sample interface{}, fn _BankRoundTripFunc) error {
 			return fmt.Errorf("invalid request file format: %q", ext)
 		}
 		d = dm.NewDecoder(f)
+	} else {
+		d = iocodec.DefaultDecoders["noop"].NewDecoder(os.Stdin)
 	}
 	conn, client, err := _DialBank()
 	if err != nil {
@@ -222,7 +231,7 @@ func _BankRoundTrip(sample interface{}, fn _BankRoundTripFunc) error {
 
 // searching for DepositRequest
 // * comparing against DepositRequest inserting into cache:
-// map[DepositRequest:{0xc0001160f0 true false}]
+// map[DepositRequest:{0xc0001100f0 true false}]
 // generating request initialization for DepositRequest
 // generating initialization for DepositRequest with prefix "" which has 2 fields
 // found non-message field "account"
@@ -233,19 +242,9 @@ func _BankDepositClientCommand() *cobra.Command {
 	reqArgs := &DepositRequest{}
 
 	cmd := &cobra.Command{
-		Use:  "deposit",
-		Long: "Deposit client\n\nYou can use environment variables with the same name of the command flags.\nAll caps and s/-/_, e.g. SERVER_ADDR.",
-		Example: `
-Save a sample request to a file (or refer to your protobuf descriptor to create one):
-	deposit -p > req.json
-
-Submit request using file:
-	deposit -f req.json
-
-Authenticate using the Authorization header (requires transport security):
-	export AUTH_TOKEN=your_access_token
-	export SERVER_ADDR=api.example.com:443
-	echo '{json}' | deposit --tls`,
+		Use:     "deposit",
+		Long:    "Deposit client; call by piping a request in to stdin (--stdin), reading a file (--file), or via flags per field",
+		Example: "TODO: print protobuf method comments here",
 		Run: func(cmd *cobra.Command, args []string) {
 			var v DepositRequest
 			err := _BankRoundTrip(v, func(cli BankClient, in iocodec.Decoder, out iocodec.Encoder) error {
@@ -280,5 +279,4 @@ Authenticate using the Authorization header (requires transport security):
 func init() {
 	cmd := _BankDepositClientCommand()
 	BankClientCommand.AddCommand(cmd)
-	_DefaultBankClientCommandConfig.AddFlags(cmd.Flags())
 }
