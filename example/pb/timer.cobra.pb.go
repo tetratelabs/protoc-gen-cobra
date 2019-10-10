@@ -80,12 +80,16 @@ func (o *_TimerClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.JWTKeyFile, "jwt-key-file", o.JWTKeyFile, "jwt key file")
 }
 
-var TimerClientCommand = &cobra.Command{
-	Use: "timer",
-}
+func TimerClientCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "timer",
+	}
+	_DefaultTimerClientCommandConfig.AddFlags(cmd.PersistentFlags())
 
-func init() {
-	_DefaultTimerClientCommandConfig.AddFlags(TimerClientCommand.PersistentFlags())
+	for _, s := range _TimerClientSubCommands {
+		cmd.AddCommand(s())
+	}
+	return cmd
 }
 
 func _DialTimer() (*grpc.ClientConn, TimerClient, error) {
@@ -207,7 +211,7 @@ func _TimerRoundTrip(sample interface{}, fn _TimerRoundTripFunc) error {
 
 // searching for TickRequest
 // * comparing against TickRequest inserting into cache:
-// map[TickRequest:{0xc000111590 true false}]
+// map[TickRequest:{0xc00012f590 true false}]
 // generating request initialization for TickRequest
 // generating initialization for TickRequest with prefix "" which has 1 fields
 // found non-message field "interval"
@@ -262,7 +266,6 @@ func _TimerTickClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _TimerTickClientCommand()
-	TimerClientCommand.AddCommand(cmd)
+var _TimerClientSubCommands = []func() *cobra.Command{
+	_TimerTickClientCommand,
 }

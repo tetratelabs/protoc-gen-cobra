@@ -80,12 +80,16 @@ func (o *_NestedMessagesClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.JWTKeyFile, "jwt-key-file", o.JWTKeyFile, "jwt key file")
 }
 
-var NestedMessagesClientCommand = &cobra.Command{
-	Use: "nestedmessages",
-}
+func NestedMessagesClientCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "nestedmessages",
+	}
+	_DefaultNestedMessagesClientCommandConfig.AddFlags(cmd.PersistentFlags())
 
-func init() {
-	_DefaultNestedMessagesClientCommandConfig.AddFlags(NestedMessagesClientCommand.PersistentFlags())
+	for _, s := range _NestedMessagesClientSubCommands {
+		cmd.AddCommand(s())
+	}
+	return cmd
 }
 
 func _DialNestedMessages() (*grpc.ClientConn, NestedMessagesClient, error) {
@@ -209,7 +213,7 @@ func _NestedMessagesRoundTrip(sample interface{}, fn _NestedMessagesRoundTripFun
 //   comparing against TopLevelNestedType
 //     searching for NestedRequest
 // * comparing against NestedRequest inserting into cache:
-// map[NestedRequest:{0xc000110e10 true false}]
+// map[NestedRequest:{0xc00012ee10 true false}]
 // searching for type '.pb.NestedRequest.InnerNestedType' with ttype: InnerNestedType
 // searching for InnerNestedType
 //   comparing against TopLevelNestedType
@@ -217,7 +221,7 @@ func _NestedMessagesRoundTrip(sample interface{}, fn _NestedMessagesRoundTripFun
 //   comparing against NestedRequest
 //     searching for InnerNestedType
 //     * comparing against InnerNestedType inserting into cache:
-// map[InnerNestedType:{0xc000110f00 true true} NestedRequest:{0xc000110e10 true false}]
+// map[InnerNestedType:{0xc00012ef00 true true} NestedRequest:{0xc00012ee10 true false}]
 // generating request initialization for InnerNestedType
 // generating initialization for InnerNestedType with prefix "" which has 1 fields
 // found non-message field "value"
@@ -226,7 +230,7 @@ func _NestedMessagesRoundTrip(sample interface{}, fn _NestedMessagesRoundTripFun
 // searching for type '.pb.TopLevelNestedType' with ttype: TopLevelNestedType
 // searching for TopLevelNestedType
 // * comparing against TopLevelNestedType inserting into cache:
-// map[InnerNestedType:{0xc000110f00 true true} NestedRequest:{0xc000110e10 true false} TopLevelNestedType:{0xc000110d20 true false}]
+// map[InnerNestedType:{0xc00012ef00 true true} NestedRequest:{0xc00012ee10 true false} TopLevelNestedType:{0xc00012ed20 true false}]
 // generating request initialization for TopLevelNestedType
 // generating initialization for TopLevelNestedType with prefix "" which has 1 fields
 // found non-message field "value"
@@ -234,9 +238,9 @@ func _NestedMessagesRoundTrip(sample interface{}, fn _NestedMessagesRoundTripFun
 
 // generating request initialization for NestedRequest
 // searching for InnerNestedType
-// * found InnerNestedTypein cache map[InnerNestedType:{0xc000110f00 true true} NestedRequest:{0xc000110e10 true false} TopLevelNestedType:{0xc000110d20 true false}]
+// * found InnerNestedTypein cache map[InnerNestedType:{0xc00012ef00 true true} NestedRequest:{0xc00012ee10 true false} TopLevelNestedType:{0xc00012ed20 true false}]
 // searching for TopLevelNestedType
-// * found TopLevelNestedTypein cache map[InnerNestedType:{0xc000110f00 true true} NestedRequest:{0xc000110e10 true false} TopLevelNestedType:{0xc000110d20 true false}]
+// * found TopLevelNestedTypein cache map[InnerNestedType:{0xc00012ef00 true true} NestedRequest:{0xc00012ee10 true false} TopLevelNestedType:{0xc00012ed20 true false}]
 // generating initialization for NestedRequest with prefix "" which has 2 fields
 // searching for type ".pb.NestedRequest.InnerNestedType" with ttype "InnerNestedType" for field "inner"
 // found, recursing with "InnerNestedType"
@@ -293,11 +297,6 @@ func _NestedMessagesGetClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _NestedMessagesGetClientCommand()
-	NestedMessagesClientCommand.AddCommand(cmd)
-}
-
 // searching for DeeplyNested
 //   comparing against TopLevelNestedType
 //     searching for DeeplyNested
@@ -308,7 +307,7 @@ func init() {
 //   comparing against NestedResponse
 //     searching for DeeplyNested
 // * comparing against DeeplyNested inserting into cache:
-// map[DeeplyNested:{0xc0001110e0 true false}]
+// map[DeeplyNested:{0xc00012f0e0 true false}]
 // searching for type '.pb.DeeplyNested.DeeplyNestedOuter' with ttype: DeeplyNestedOuter
 // searching for DeeplyNestedOuter
 //   comparing against TopLevelNestedType
@@ -322,7 +321,7 @@ func init() {
 //   comparing against DeeplyNested
 //     searching for DeeplyNestedOuter
 //     * comparing against DeeplyNestedOuter inserting into cache:
-// map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // searching for type '.pb.DeeplyNested.DeeplyNestedOuter.DeeplyNestedInner' with ttype: DeeplyNestedInner
 // searching for DeeplyNestedInner
 //   comparing against TopLevelNestedType
@@ -338,7 +337,7 @@ func init() {
 //       comparing against DeeplyNestedOuter
 //         searching for DeeplyNestedInner
 //         * comparing against DeeplyNestedInner inserting into cache:
-// map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedInner:{0xc0001112c0 true true} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedInner:{0xc00012f2c0 true true} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // searching for type '.pb.DeeplyNested.DeeplyNestedOuter.DeeplyNestedInner.DeeplyNestedInnermost' with ttype: DeeplyNestedInnermost
 // searching for DeeplyNestedInnermost
 //   comparing against TopLevelNestedType
@@ -356,7 +355,7 @@ func init() {
 //           comparing against DeeplyNestedInner
 //             searching for DeeplyNestedInnermost
 //             * comparing against DeeplyNestedInnermost inserting into cache:
-// map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedInner:{0xc0001112c0 true true} DeeplyNestedInnermost:{0xc0001113b0 true true} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedInner:{0xc00012f2c0 true true} DeeplyNestedInnermost:{0xc00012f3b0 true true} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // generating request initialization for DeeplyNestedInnermost
 // generating initialization for DeeplyNestedInnermost with prefix "" which has 1 fields
 // found non-message field "l3"
@@ -364,7 +363,7 @@ func init() {
 
 // generating request initialization for DeeplyNestedInner
 // searching for DeeplyNestedInnermost
-// * found DeeplyNestedInnermostin cache map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedInner:{0xc0001112c0 true true} DeeplyNestedInnermost:{0xc0001113b0 true true} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// * found DeeplyNestedInnermostin cache map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedInner:{0xc00012f2c0 true true} DeeplyNestedInnermost:{0xc00012f3b0 true true} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // generating initialization for DeeplyNestedInner with prefix "" which has 1 fields
 // searching for type ".pb.DeeplyNested.DeeplyNestedOuter.DeeplyNestedInner.DeeplyNestedInnermost" with ttype "DeeplyNestedInnermost" for field "l2"
 // found, recursing with "DeeplyNestedInnermost"
@@ -376,9 +375,9 @@ func init() {
 
 // generating request initialization for DeeplyNestedOuter
 // searching for DeeplyNestedInner
-// * found DeeplyNestedInnerin cache map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedInner:{0xc0001112c0 true true} DeeplyNestedInnermost:{0xc0001113b0 true true} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// * found DeeplyNestedInnerin cache map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedInner:{0xc00012f2c0 true true} DeeplyNestedInnermost:{0xc00012f3b0 true true} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // searching for DeeplyNestedInnermost
-// * found DeeplyNestedInnermostin cache map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedInner:{0xc0001112c0 true true} DeeplyNestedInnermost:{0xc0001113b0 true true} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// * found DeeplyNestedInnermostin cache map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedInner:{0xc00012f2c0 true true} DeeplyNestedInnermost:{0xc00012f3b0 true true} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // generating initialization for DeeplyNestedOuter with prefix "" which has 1 fields
 // searching for type ".pb.DeeplyNested.DeeplyNestedOuter.DeeplyNestedInner" with ttype "DeeplyNestedInner" for field "l1"
 // found, recursing with "DeeplyNestedInner"
@@ -395,11 +394,11 @@ func init() {
 
 // generating request initialization for DeeplyNested
 // searching for DeeplyNestedOuter
-// * found DeeplyNestedOuterin cache map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedInner:{0xc0001112c0 true true} DeeplyNestedInnermost:{0xc0001113b0 true true} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// * found DeeplyNestedOuterin cache map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedInner:{0xc00012f2c0 true true} DeeplyNestedInnermost:{0xc00012f3b0 true true} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // searching for DeeplyNestedInner
-// * found DeeplyNestedInnerin cache map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedInner:{0xc0001112c0 true true} DeeplyNestedInnermost:{0xc0001113b0 true true} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// * found DeeplyNestedInnerin cache map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedInner:{0xc00012f2c0 true true} DeeplyNestedInnermost:{0xc00012f3b0 true true} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // searching for DeeplyNestedInnermost
-// * found DeeplyNestedInnermostin cache map[DeeplyNested:{0xc0001110e0 true false} DeeplyNestedInner:{0xc0001112c0 true true} DeeplyNestedInnermost:{0xc0001113b0 true true} DeeplyNestedOuter:{0xc0001111d0 true true}]
+// * found DeeplyNestedInnermostin cache map[DeeplyNested:{0xc00012f0e0 true false} DeeplyNestedInner:{0xc00012f2c0 true true} DeeplyNestedInnermost:{0xc00012f3b0 true true} DeeplyNestedOuter:{0xc00012f1d0 true true}]
 // generating initialization for DeeplyNested with prefix "" which has 1 fields
 // searching for type ".pb.DeeplyNested.DeeplyNestedOuter" with ttype "DeeplyNestedOuter" for field "l0"
 // found, recursing with "DeeplyNestedOuter"
@@ -462,7 +461,7 @@ func _NestedMessagesGetDeeplyNestedClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _NestedMessagesGetDeeplyNestedClientCommand()
-	NestedMessagesClientCommand.AddCommand(cmd)
+var _NestedMessagesClientSubCommands = []func() *cobra.Command{
+	_NestedMessagesGetClientCommand,
+	_NestedMessagesGetDeeplyNestedClientCommand,
 }

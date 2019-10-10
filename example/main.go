@@ -21,11 +21,11 @@ import (
 
 func init() {
 	// Add client generated commands to cobra's root cmd.
-	cmd.RootCmd.AddCommand(pb.BankClientCommand)
-	cmd.RootCmd.AddCommand(pb.CacheClientCommand)
-	cmd.RootCmd.AddCommand(pb.TimerClientCommand)
-	cmd.RootCmd.AddCommand(pb.NestedMessagesClientCommand)
-	cmd.RootCmd.AddCommand(pb.CRUDClientCommand)
+	cmd.RootCmd.AddCommand(pb.BankClientCommand())
+	cmd.RootCmd.AddCommand(pb.CacheClientCommand())
+	cmd.RootCmd.AddCommand(pb.TimerClientCommand())
+	cmd.RootCmd.AddCommand(pb.NestedMessagesClientCommand())
+	cmd.RootCmd.AddCommand(pb.CRUDClientCommand())
 }
 
 func main() {

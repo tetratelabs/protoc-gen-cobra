@@ -173,9 +173,35 @@ func (c *client) generateService(file *generator.FileDescriptor, service *pb.Ser
 	c.P()
 	c.generateCommand(servName)
 	c.P()
-	for _, method := range service.Method {
-		c.generateSubcommand(servName, file, method)
+
+	subCommands := make([]string, len(service.Method))
+	for i, method := range service.Method {
+		subCommands[i] = c.generateSubcommand(servName, file, method)
 	}
+	c.P()
+
+	c.generateCommandsList(servName, subCommands)
+}
+
+var generateCommandListTemplate = template.Must(template.New("command list").Parse(`
+var _{{.Name}}ClientSubCommands = []func() *cobra.Command{ {{ range .SubCommands }}
+	{{ . }},{{end}}
+}
+`))
+
+func (c *client) generateCommandsList(name string, subCommands []string) {
+	var b bytes.Buffer
+	err := generateCommandListTemplate.Execute(&b, struct {
+		Name        string
+		SubCommands []string
+	}{
+		Name:        name,
+		SubCommands: subCommands,
+	})
+	if err != nil {
+		c.gen.Error(err, "exec cmd list template")
+	}
+	c.P(b.String())
 	c.P()
 }
 
@@ -230,12 +256,16 @@ func (o *_{{.Name}}ClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.JWTKeyFile, "jwt-key-file", o.JWTKeyFile, "jwt key file")
 }
 
-var {{.Name}}ClientCommand = &cobra.Command{
-	Use: "{{.UseName}}",
-}
+func {{.Name}}ClientCommand() *cobra.Command {
+	cmd := &cobra.Command {
+		Use: "{{.UseName}}",
+	}
+	_Default{{.Name}}ClientCommandConfig.AddFlags(cmd.PersistentFlags())
 
-func init() {
-	_Default{{.Name}}ClientCommandConfig.AddFlags({{.Name}}ClientCommand.PersistentFlags())
+	for _, s := range _{{.Name}}ClientSubCommands {
+		cmd.AddCommand(s())
+	}
+	return cmd
 }
 
 func _Dial{{.Name}}() (*grpc.ClientConn, {{.Name}}Client, error) {
@@ -455,16 +485,12 @@ func _{{.FullName}}ClientCommand() *cobra.Command {
 
 	return cmd
 }
-
-func init() {
-	cmd := _{{.FullName}}ClientCommand()
-	{{.ServiceName}}ClientCommand.AddCommand(cmd)
-}
 `
 
 var generateSubcommandTemplate = template.Must(template.New("subcmd").Parse(generateSubcommandTemplateCode))
 
-func (c *client) generateSubcommand(servName string, file *generator.FileDescriptor, method *pb.MethodDescriptorProto) {
+// writes the subcommand to c.P and returns a golang fragment which is a reference to the constructor for this method
+func (c *client) generateSubcommand(servName string, file *generator.FileDescriptor, method *pb.MethodDescriptorProto) string {
 	/*
 		if method.GetClientStreaming() || method.GetServerStreaming() {
 			return // TODO: handle streams correctly
@@ -514,6 +540,7 @@ func (c *client) generateSubcommand(servName string, file *generator.FileDescrip
 	}
 	c.P(b.String())
 	c.P()
+	return "_" + servName + methName + "ClientCommand"
 }
 
 func inputNames(s string) (importName, inputPackage, inputType string) {

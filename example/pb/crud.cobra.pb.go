@@ -80,12 +80,16 @@ func (o *_CRUDClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.JWTKeyFile, "jwt-key-file", o.JWTKeyFile, "jwt key file")
 }
 
-var CRUDClientCommand = &cobra.Command{
-	Use: "crud",
-}
+func CRUDClientCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "crud",
+	}
+	_DefaultCRUDClientCommandConfig.AddFlags(cmd.PersistentFlags())
 
-func init() {
-	_DefaultCRUDClientCommandConfig.AddFlags(CRUDClientCommand.PersistentFlags())
+	for _, s := range _CRUDClientSubCommands {
+		cmd.AddCommand(s())
+	}
+	return cmd
 }
 
 func _DialCRUD() (*grpc.ClientConn, CRUDClient, error) {
@@ -209,7 +213,7 @@ func _CRUDRoundTrip(sample interface{}, fn _CRUDRoundTripFunc) error {
 //   comparing against CRUDObject
 //     searching for CreateCRUD
 // * comparing against CreateCRUD inserting into cache:
-// map[CreateCRUD:{0xc000110960 true false}]
+// map[CreateCRUD:{0xc00012e960 true false}]
 // generating request initialization for CreateCRUD
 // generating initialization for CreateCRUD with prefix "" which has 2 fields
 // found non-message field "name"
@@ -254,18 +258,13 @@ func _CRUDCreateClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _CRUDCreateClientCommand()
-	CRUDClientCommand.AddCommand(cmd)
-}
-
 // searching for GetCRUD
 //   comparing against CRUDObject
 //     searching for GetCRUD
 //   comparing against CreateCRUD
 //     searching for GetCRUD
 // * comparing against GetCRUD inserting into cache:
-// map[GetCRUD:{0xc000110a50 true false}]
+// map[GetCRUD:{0xc00012ea50 true false}]
 // generating request initialization for GetCRUD
 // generating initialization for GetCRUD with prefix "" which has 1 fields
 // found non-message field "name"
@@ -308,14 +307,9 @@ func _CRUDGetClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _CRUDGetClientCommand()
-	CRUDClientCommand.AddCommand(cmd)
-}
-
 // searching for CRUDObject
 // * comparing against CRUDObject inserting into cache:
-// map[CRUDObject:{0xc000110870 true false}]
+// map[CRUDObject:{0xc00012e870 true false}]
 // generating request initialization for CRUDObject
 // generating initialization for CRUDObject with prefix "" which has 2 fields
 // found non-message field "name"
@@ -360,14 +354,9 @@ func _CRUDUpdateClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _CRUDUpdateClientCommand()
-	CRUDClientCommand.AddCommand(cmd)
-}
-
 // searching for CRUDObject
 // * comparing against CRUDObject inserting into cache:
-// map[CRUDObject:{0xc000110870 true false}]
+// map[CRUDObject:{0xc00012e870 true false}]
 // generating request initialization for CRUDObject
 // generating initialization for CRUDObject with prefix "" which has 2 fields
 // found non-message field "name"
@@ -412,7 +401,9 @@ func _CRUDDeleteClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _CRUDDeleteClientCommand()
-	CRUDClientCommand.AddCommand(cmd)
+var _CRUDClientSubCommands = []func() *cobra.Command{
+	_CRUDCreateClientCommand,
+	_CRUDGetClientCommand,
+	_CRUDUpdateClientCommand,
+	_CRUDDeleteClientCommand,
 }

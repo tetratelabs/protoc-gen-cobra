@@ -81,12 +81,16 @@ func (o *_CacheClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.JWTKeyFile, "jwt-key-file", o.JWTKeyFile, "jwt key file")
 }
 
-var CacheClientCommand = &cobra.Command{
-	Use: "cache",
-}
+func CacheClientCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "cache",
+	}
+	_DefaultCacheClientCommandConfig.AddFlags(cmd.PersistentFlags())
 
-func init() {
-	_DefaultCacheClientCommandConfig.AddFlags(CacheClientCommand.PersistentFlags())
+	for _, s := range _CacheClientSubCommands {
+		cmd.AddCommand(s())
+	}
+	return cmd
 }
 
 func _DialCache() (*grpc.ClientConn, CacheClient, error) {
@@ -208,7 +212,7 @@ func _CacheRoundTrip(sample interface{}, fn _CacheRoundTripFunc) error {
 
 // searching for SetRequest
 // * comparing against SetRequest inserting into cache:
-// map[SetRequest:{0xc0001103c0 true false}]
+// map[SetRequest:{0xc00012e3c0 true false}]
 // generating request initialization for SetRequest
 // generating initialization for SetRequest with prefix "" which has 2 fields
 // found non-message field "key"
@@ -253,18 +257,13 @@ func _CacheSetClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _CacheSetClientCommand()
-	CacheClientCommand.AddCommand(cmd)
-}
-
 // searching for GetRequest
 //   comparing against SetRequest
 //     searching for GetRequest
 //   comparing against SetResponse
 //     searching for GetRequest
 // * comparing against GetRequest inserting into cache:
-// map[GetRequest:{0xc0001105a0 true false}]
+// map[GetRequest:{0xc00012e5a0 true false}]
 // generating request initialization for GetRequest
 // generating initialization for GetRequest with prefix "" which has 1 fields
 // found non-message field "key"
@@ -307,14 +306,9 @@ func _CacheGetClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _CacheGetClientCommand()
-	CacheClientCommand.AddCommand(cmd)
-}
-
 // searching for SetRequest
 // * comparing against SetRequest inserting into cache:
-// map[SetRequest:{0xc0001103c0 true false}]
+// map[SetRequest:{0xc00012e3c0 true false}]
 // generating request initialization for SetRequest
 // generating initialization for SetRequest with prefix "" which has 2 fields
 // found non-message field "key"
@@ -371,18 +365,13 @@ func _CacheMultiSetClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _CacheMultiSetClientCommand()
-	CacheClientCommand.AddCommand(cmd)
-}
-
 // searching for GetRequest
 //   comparing against SetRequest
 //     searching for GetRequest
 //   comparing against SetResponse
 //     searching for GetRequest
 // * comparing against GetRequest inserting into cache:
-// map[GetRequest:{0xc0001105a0 true false}]
+// map[GetRequest:{0xc00012e5a0 true false}]
 // generating request initialization for GetRequest
 // generating initialization for GetRequest with prefix "" which has 1 fields
 // found non-message field "key"
@@ -445,7 +434,9 @@ func _CacheMultiGetClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _CacheMultiGetClientCommand()
-	CacheClientCommand.AddCommand(cmd)
+var _CacheClientSubCommands = []func() *cobra.Command{
+	_CacheSetClientCommand,
+	_CacheGetClientCommand,
+	_CacheMultiSetClientCommand,
+	_CacheMultiGetClientCommand,
 }

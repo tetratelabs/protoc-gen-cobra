@@ -104,12 +104,16 @@ func (o *_BankClientCommandConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.JWTKeyFile, "jwt-key-file", o.JWTKeyFile, "jwt key file")
 }
 
-var BankClientCommand = &cobra.Command{
-	Use: "bank",
-}
+func BankClientCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "bank",
+	}
+	_DefaultBankClientCommandConfig.AddFlags(cmd.PersistentFlags())
 
-func init() {
-	_DefaultBankClientCommandConfig.AddFlags(BankClientCommand.PersistentFlags())
+	for _, s := range _BankClientSubCommands {
+		cmd.AddCommand(s())
+	}
+	return cmd
 }
 
 func _DialBank() (*grpc.ClientConn, BankClient, error) {
@@ -231,7 +235,7 @@ func _BankRoundTrip(sample interface{}, fn _BankRoundTripFunc) error {
 
 // searching for DepositRequest
 // * comparing against DepositRequest inserting into cache:
-// map[DepositRequest:{0xc0001100f0 true false}]
+// map[DepositRequest:{0xc00012e0f0 true false}]
 // generating request initialization for DepositRequest
 // generating initialization for DepositRequest with prefix "" which has 2 fields
 // found non-message field "account"
@@ -276,7 +280,6 @@ func _BankDepositClientCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmd := _BankDepositClientCommand()
-	BankClientCommand.AddCommand(cmd)
+var _BankClientSubCommands = []func() *cobra.Command{
+	_BankDepositClientCommand,
 }
