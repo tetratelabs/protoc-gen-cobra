@@ -92,7 +92,6 @@ func (c *client) generateSubMessageRequestFlags(objectName, flagPrefix string, d
 			out = append(out, fmt.Sprintf(`.PersistentFlags().StringVar(&%s.%s, "%s%s", "", "%s")`,
 				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
 		case pb.FieldDescriptorProto_TYPE_BYTES:
-			f.GetJsonName()
 			out = append(out, fmt.Sprintf(`.PersistentFlags().BytesBase64Var(&%s.%s, "%s%s", []byte{}, "%s")`,
 				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
 		case pb.FieldDescriptorProto_TYPE_BOOL:
@@ -104,36 +103,37 @@ func (c *client) generateSubMessageRequestFlags(objectName, flagPrefix string, d
 		case pb.FieldDescriptorProto_TYPE_DOUBLE:
 			out = append(out, fmt.Sprintf(`.PersistentFlags().Float64Var(&%s.%s, "%s%s", 0, "%s")`,
 				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+		case pb.FieldDescriptorProto_TYPE_INT32:
+			out = append(out, fmt.Sprintf(`.PersistentFlags().Int32Var(&%s.%s, "%s%s", 0, "%s")`,
+				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+		case pb.FieldDescriptorProto_TYPE_FIXED32:
+			out = append(out, fmt.Sprintf(`.PersistentFlags().Int32Var(&%s.%s, "%s%s", 0, "%s")`,
+				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+		case pb.FieldDescriptorProto_TYPE_SFIXED32:
+			out = append(out, fmt.Sprintf(`.PersistentFlags().Int32Var(&%s.%s, "%s%s", 0, "%s")`,
+				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+		case pb.FieldDescriptorProto_TYPE_SINT32:
+			out = append(out, fmt.Sprintf(`.PersistentFlags().Int32Var(&%s.%s, "%s%s", 0, "%s")`,
+				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+		case pb.FieldDescriptorProto_TYPE_UINT32:
+			out = append(out, fmt.Sprintf(`.PersistentFlags().Uint32Var(&%s.%s, "%s%s", 0, "%s")`,
+				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
 		case pb.FieldDescriptorProto_TYPE_INT64:
+			out = append(out, fmt.Sprintf(`.PersistentFlags().Int64Var(&%s.%s, "%s%s", 0, "%s")`,
+				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+		case pb.FieldDescriptorProto_TYPE_FIXED64:
+			out = append(out, fmt.Sprintf(`.PersistentFlags().Int64Var(&%s.%s, "%s%s", 0, "%s")`,
+				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+		case pb.FieldDescriptorProto_TYPE_SFIXED64:
+			out = append(out, fmt.Sprintf(`.PersistentFlags().Int64Var(&%s.%s, "%s%s", 0, "%s")`,
+				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+		case pb.FieldDescriptorProto_TYPE_SINT64:
 			out = append(out, fmt.Sprintf(`.PersistentFlags().Int64Var(&%s.%s, "%s%s", 0, "%s")`,
 				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
 		case pb.FieldDescriptorProto_TYPE_UINT64:
 			out = append(out, fmt.Sprintf(`.PersistentFlags().Uint64Var(&%s.%s, "%s%s", 0, "%s")`,
 				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
-		case pb.FieldDescriptorProto_TYPE_INT32:
-			out = append(out, fmt.Sprintf(`.PersistentFlags().Int32Var(&%s.%s, "%s%s", 0, "%s")`,
-				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
-		case pb.FieldDescriptorProto_TYPE_FIXED64:
-			out = append(out, fmt.Sprintf(`.PersistentFlags().Int64Var(&%s.%s, "%s%s", 0, "%s")`,
-				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
-		case pb.FieldDescriptorProto_TYPE_FIXED32:
-			out = append(out, fmt.Sprintf(`.PersistentFlags().Int32Var(&%s.%s, "%s%s", 0, "%s")`,
-				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
-		case pb.FieldDescriptorProto_TYPE_UINT32:
-			out = append(out, fmt.Sprintf(`.PersistentFlags().Uint32Var(&%s.%s, "%s%s", false, "%s")`,
-				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
-		case pb.FieldDescriptorProto_TYPE_SFIXED32:
-			out = append(out, fmt.Sprintf(`.PersistentFlags().Int32Var(&%s.%s, "%s%s", false, "%s")`,
-				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
-		case pb.FieldDescriptorProto_TYPE_SFIXED64:
-			out = append(out, fmt.Sprintf(`.PersistentFlags().Int64Var(&%s.%s, "%s%s", false, "%s")`,
-				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
-		case pb.FieldDescriptorProto_TYPE_SINT32:
-			out = append(out, fmt.Sprintf(`.PersistentFlags().Int32Var(&%s.%s, "%s%s", false, "%s")`,
-				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
-		case pb.FieldDescriptorProto_TYPE_SINT64:
-			out = append(out, fmt.Sprintf(`.PersistentFlags().Int64Var(&%s.%s, "%s%s", false, "%s")`,
-				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
+
 		case pb.FieldDescriptorProto_TYPE_GROUP:
 		default:
 		}

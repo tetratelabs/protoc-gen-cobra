@@ -507,6 +507,9 @@ func (c *client) generateSubcommand(servName string, file *generator.FileDescrip
 		importName = ""
 	}
 
+	// TODO: fix below
+	_ = importName
+
 	types := make(protoTypeCache)
 	inputDesc, _, _ := types.byName(file.MessageType, inputType, noop /*prefix("// ", c.P)*/)
 	obj, reqArgFlags := c.generateRequestFlags(file, inputDesc, types)
@@ -528,7 +531,7 @@ func (c *client) generateSubcommand(servName string, file *generator.FileDescrip
 		UseName:                   strings.ToLower(methName),
 		ServiceName:               servName,
 		FullName:                  servName + methName,
-		InputPackage:              importName,
+		InputPackage:              "", /*importName TODO: fix - not needed for Tetrate's protos today*/
 		InputType:                 inputType,
 		InitializeRequestFlagsObj: obj,
 		RequestFlags:              reqArgFlags,
