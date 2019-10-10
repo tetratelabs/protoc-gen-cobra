@@ -210,15 +210,6 @@ func _CacheRoundTrip(sample interface{}, fn _CacheRoundTripFunc) error {
 	return fn(client, d, em.NewEncoder(os.Stdout))
 }
 
-// searching for SetRequest
-// * comparing against SetRequest inserting into cache:
-// map[SetRequest:{0xc00012e3c0 true false}]
-// generating request initialization for SetRequest
-// generating initialization for SetRequest with prefix "" which has 2 fields
-// found non-message field "key"
-// found non-message field "value"
-// computed "&SetRequest{}"
-
 func _CacheSetClientCommand() *cobra.Command {
 	reqArgs := &SetRequest{}
 
@@ -257,18 +248,6 @@ func _CacheSetClientCommand() *cobra.Command {
 	return cmd
 }
 
-// searching for GetRequest
-//   comparing against SetRequest
-//     searching for GetRequest
-//   comparing against SetResponse
-//     searching for GetRequest
-// * comparing against GetRequest inserting into cache:
-// map[GetRequest:{0xc00012e5a0 true false}]
-// generating request initialization for GetRequest
-// generating initialization for GetRequest with prefix "" which has 1 fields
-// found non-message field "key"
-// computed "&GetRequest{}"
-
 func _CacheGetClientCommand() *cobra.Command {
 	reqArgs := &GetRequest{}
 
@@ -305,15 +284,6 @@ func _CacheGetClientCommand() *cobra.Command {
 
 	return cmd
 }
-
-// searching for SetRequest
-// * comparing against SetRequest inserting into cache:
-// map[SetRequest:{0xc00012e3c0 true false}]
-// generating request initialization for SetRequest
-// generating initialization for SetRequest with prefix "" which has 2 fields
-// found non-message field "key"
-// found non-message field "value"
-// computed "&SetRequest{}"
 
 func _CacheMultiSetClientCommand() *cobra.Command {
 	reqArgs := &SetRequest{}
@@ -364,18 +334,6 @@ func _CacheMultiSetClientCommand() *cobra.Command {
 
 	return cmd
 }
-
-// searching for GetRequest
-//   comparing against SetRequest
-//     searching for GetRequest
-//   comparing against SetResponse
-//     searching for GetRequest
-// * comparing against GetRequest inserting into cache:
-// map[GetRequest:{0xc00012e5a0 true false}]
-// generating request initialization for GetRequest
-// generating initialization for GetRequest with prefix "" which has 1 fields
-// found non-message field "key"
-// computed "&GetRequest{}"
 
 func _CacheMultiGetClientCommand() *cobra.Command {
 	reqArgs := &GetRequest{}

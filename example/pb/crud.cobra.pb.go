@@ -209,17 +209,6 @@ func _CRUDRoundTrip(sample interface{}, fn _CRUDRoundTripFunc) error {
 	return fn(client, d, em.NewEncoder(os.Stdout))
 }
 
-// searching for CreateCRUD
-//   comparing against CRUDObject
-//     searching for CreateCRUD
-// * comparing against CreateCRUD inserting into cache:
-// map[CreateCRUD:{0xc00012e960 true false}]
-// generating request initialization for CreateCRUD
-// generating initialization for CreateCRUD with prefix "" which has 2 fields
-// found non-message field "name"
-// found non-message field "value"
-// computed "&CreateCRUD{}"
-
 func _CRUDCreateClientCommand() *cobra.Command {
 	reqArgs := &CreateCRUD{}
 
@@ -258,18 +247,6 @@ func _CRUDCreateClientCommand() *cobra.Command {
 	return cmd
 }
 
-// searching for GetCRUD
-//   comparing against CRUDObject
-//     searching for GetCRUD
-//   comparing against CreateCRUD
-//     searching for GetCRUD
-// * comparing against GetCRUD inserting into cache:
-// map[GetCRUD:{0xc00012ea50 true false}]
-// generating request initialization for GetCRUD
-// generating initialization for GetCRUD with prefix "" which has 1 fields
-// found non-message field "name"
-// computed "&GetCRUD{}"
-
 func _CRUDGetClientCommand() *cobra.Command {
 	reqArgs := &GetCRUD{}
 
@@ -306,15 +283,6 @@ func _CRUDGetClientCommand() *cobra.Command {
 
 	return cmd
 }
-
-// searching for CRUDObject
-// * comparing against CRUDObject inserting into cache:
-// map[CRUDObject:{0xc00012e870 true false}]
-// generating request initialization for CRUDObject
-// generating initialization for CRUDObject with prefix "" which has 2 fields
-// found non-message field "name"
-// found non-message field "value"
-// computed "&CRUDObject{}"
 
 func _CRUDUpdateClientCommand() *cobra.Command {
 	reqArgs := &CRUDObject{}
@@ -353,15 +321,6 @@ func _CRUDUpdateClientCommand() *cobra.Command {
 
 	return cmd
 }
-
-// searching for CRUDObject
-// * comparing against CRUDObject inserting into cache:
-// map[CRUDObject:{0xc00012e870 true false}]
-// generating request initialization for CRUDObject
-// generating initialization for CRUDObject with prefix "" which has 2 fields
-// found non-message field "name"
-// found non-message field "value"
-// computed "&CRUDObject{}"
 
 func _CRUDDeleteClientCommand() *cobra.Command {
 	reqArgs := &CRUDObject{}

@@ -209,14 +209,6 @@ func _TimerRoundTrip(sample interface{}, fn _TimerRoundTripFunc) error {
 	return fn(client, d, em.NewEncoder(os.Stdout))
 }
 
-// searching for TickRequest
-// * comparing against TickRequest inserting into cache:
-// map[TickRequest:{0xc00012f590 true false}]
-// generating request initialization for TickRequest
-// generating initialization for TickRequest with prefix "" which has 1 fields
-// found non-message field "interval"
-// computed "&TickRequest{}"
-
 func _TimerTickClientCommand() *cobra.Command {
 	reqArgs := &TickRequest{}
 

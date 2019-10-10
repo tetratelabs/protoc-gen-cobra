@@ -47,6 +47,8 @@ func prefix(pre string, l func(...interface{})) func(...interface{}) {
 	return func(i ...interface{}) { l(append([]interface{}{pre}, i...)...) }
 }
 
+func noop(...interface{}) {}
+
 // first return is the instantiation of the struct and fields that are messages; second is the set of
 // flag declarations using the fields of the struct to receive values
 func (c *client) generateRequestFlags(file *generator.FileDescriptor, d *pb.DescriptorProto, types protoTypeCache) (string, []string) {
@@ -67,12 +69,9 @@ func (c *client) generateSubMessageRequestFlags(objectName, flagPrefix string, d
 		case pb.FieldDescriptorProto_TYPE_MESSAGE:
 			// if both type and name are set, descriptor must be either a message or enum
 			_, _, ttype := inputNames(f.GetTypeName())
-			c.P("// searching for type '", f.GetTypeName(), "' with ttype: ", ttype)
-			if fdesc, found, _ := types.byName(file.MessageType, ttype, prefix("// ", c.P)); found {
+			if fdesc, found, _ := types.byName(file.MessageType, ttype, noop /*prefix("// ", c.P)*/); found {
 				_, flags := c.generateSubMessageRequestFlags(objectName+"."+fieldName, flagPrefix+fieldFlagName+"-", fdesc, file, types)
 				out = append(out, flags...)
-			} else {
-				c.P("// could not locate sub-message for '", f.GetName(), "' type '", f.GetTypeName(), "' ttype '", ttype, "'", "skipping it")
 			}
 		case pb.FieldDescriptorProto_TYPE_ENUM:
 			// TODO
@@ -123,12 +122,9 @@ func (c *client) generateSubMessageRequestFlags(objectName, flagPrefix string, d
 			out = append(out, fmt.Sprintf(`.PersistentFlags().Int64Var(&%s.%s, "%s%s", false, "%s")`,
 				objectName, fieldName, flagPrefix, fieldFlagName, "get-comment-from-proto"))
 		case pb.FieldDescriptorProto_TYPE_GROUP:
-			//log.Warn("skipping field with proto1 group type")
 		default:
-			//log.Debugf("got unknown proto type: %#v", f)
 		}
 	}
-	c.P("// generating request initialization for ", d.GetName())
 
 	initialize := c.generateRequestInitialization(d, file, types)
 	return initialize, out
@@ -144,8 +140,8 @@ func goFieldName(f *pb.FieldDescriptorProto) string {
 
 func (c *client) generateRequestInitialization(d *pb.DescriptorProto, file *generator.FileDescriptor, types protoTypeCache) string {
 	debug := &bytes.Buffer{}
-	initialize := genReqInit(d, file, types, "", debug, 0, prefix("// ", c.P))
-	c.P(debug.String())
+	initialize := genReqInit(d, file, types, "", debug, 0, noop /*prefix("// ", c.P)*/)
+	// c.P(debug.String())
 	return initialize
 }
 

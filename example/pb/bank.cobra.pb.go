@@ -233,15 +233,6 @@ func _BankRoundTrip(sample interface{}, fn _BankRoundTripFunc) error {
 	return fn(client, d, em.NewEncoder(os.Stdout))
 }
 
-// searching for DepositRequest
-// * comparing against DepositRequest inserting into cache:
-// map[DepositRequest:{0xc00012e0f0 true false}]
-// generating request initialization for DepositRequest
-// generating initialization for DepositRequest with prefix "" which has 2 fields
-// found non-message field "account"
-// found non-message field "amount"
-// computed "&DepositRequest{}"
-
 func _BankDepositClientCommand() *cobra.Command {
 	reqArgs := &DepositRequest{}
 

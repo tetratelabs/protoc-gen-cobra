@@ -508,7 +508,7 @@ func (c *client) generateSubcommand(servName string, file *generator.FileDescrip
 	}
 
 	types := make(protoTypeCache)
-	inputDesc, _, _ := types.byName(file.MessageType, inputType, prefix("// ", c.P))
+	inputDesc, _, _ := types.byName(file.MessageType, inputType, noop /*prefix("// ", c.P)*/)
 	obj, reqArgFlags := c.generateRequestFlags(file, inputDesc, types)
 
 	var b bytes.Buffer
