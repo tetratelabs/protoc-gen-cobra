@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package nosvc;
+
+message No { string no = 1; }
+
+message Svc { string svc = 1; }
