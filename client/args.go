@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	pb "github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -184,7 +185,14 @@ func genReqInit(d *pb.DescriptorProto, file *generator.FileDescriptor, types pro
 
 			prefix := typePrefix
 			if nested {
-				prefix += d.GetName() + "_"
+				for _, df := range d.Field {
+					if strings.Contains(fmt.Sprintf(".%s.", df.GetTypeName()), d.GetName()) {
+						prefix += d.GetName() + "_"
+						break
+					}
+				}
+			} else {
+				prefix = ""
 			}
 
 			fmt.Fprintf(w, "// found, recursing with %q\n", desc.GetName())
@@ -196,9 +204,16 @@ func genReqInit(d *pb.DescriptorProto, file *generator.FileDescriptor, types pro
 		}
 	}
 
-	vals := make([]string, 0, len(fields))
-	for n, v := range fields {
-		vals = append(vals, n+": "+v)
+	// This needs to be consistent.
+	keys := make([]string, 0, len(fields))
+	for k := range fields {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	vals := make([]string, 0, len(keys))
+	for _, k := range keys {
+		vals = append(vals, k+": "+fields[k])
 	}
 	values := "{}"
 	if len(vals) > 0 {

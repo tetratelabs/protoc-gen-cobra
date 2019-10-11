@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package pb;
+
+service Bank { rpc Deposit(DepositRequest) returns (DepositReply); }
+
+message DepositRequest {
+  string parent = 1;
+  string tenant = 2;
+  string environment = 3;
+
+  repeated ClusterWithNamespaces clusters = 4;
+  ClusterWithNamespaces cluster_with_namespaces = 5;
+
+  message ClusterWithNamespaces {
+    Cluster cluster = 1;
+    repeated NamespaceWithDeployments namespaces = 2;
+  };
+
+  message NamespaceWithDeployments {
+    Namespace namespace = 1;
+    repeated DeploymentWithEndpoints deployments = 2;
+  };
+
+  message DeploymentWithEndpoints {
+    Deployment deployment = 1;
+    repeated Endpoint endpoints = 2;
+  };
+}
+
+message Deployment {}
+message Endpoint {}
+message Namespace {}
+message Cluster {}
+
+message DepositReply { string id = 1; }

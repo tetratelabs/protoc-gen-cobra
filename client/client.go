@@ -108,14 +108,15 @@ func (c *client) Generate(file *generator.FileDescriptor) {
 
 // GenerateImports generates the import declaration for this file.
 func (c *client) GenerateImports(file *generator.FileDescriptor, imports []*generator.FileDescriptor) {
-	if len(file.FileDescriptorProto.Service) == 0 {
-		return
-	}
-
 	c.P("import (")
 
 	// proto import is hard coded
 	c.P("proto ", strconv.Quote(c.gen.ImportPrefix+"github.com/golang/protobuf/proto"))
+
+	if len(file.FileDescriptorProto.Service) == 0 {
+		c.P(")")
+		return
+	}
 
 	for _, n := range sortedImportPkgNames {
 		v := importPkgsByName[n]
