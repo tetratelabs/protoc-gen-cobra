@@ -3,6 +3,7 @@ module github.com/tetratelabs/protoc-gen-cobra
 go 1.13
 
 require (
+	github.com/gertd/go-pluralize v0.1.1
 	github.com/golang/protobuf v1.3.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5

@@ -19,6 +19,7 @@ import (
 
 	pb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 
+	pluralize "github.com/gertd/go-pluralize"
 	"github.com/tetratelabs/protoc-gen-cobra/generator"
 )
 
@@ -515,9 +516,16 @@ func (c *client) generateSubcommand(servName string, file *generator.FileDescrip
 	inputDesc, _, _ := types.byName(file.MessageType, inputType, noop /*prefix("// ", c.P)*/)
 	obj, reqArgFlags := c.generateRequestFlags(file, inputDesc, types)
 
+	p := pluralize.NewClient()
+	singularServName := p.Singular(servName)
 	shortName := methName
 	if strings.HasSuffix(shortName, servName) {
 		index := strings.Index(shortName, servName)
+		shortName = shortName[0:index]
+	}
+
+	if strings.HasSuffix(shortName, singularServName) {
+		index := strings.Index(shortName, singularServName)
 		shortName = shortName[0:index]
 	}
 
