@@ -515,6 +515,12 @@ func (c *client) generateSubcommand(servName string, file *generator.FileDescrip
 	inputDesc, _, _ := types.byName(file.MessageType, inputType, noop /*prefix("// ", c.P)*/)
 	obj, reqArgFlags := c.generateRequestFlags(file, inputDesc, types)
 
+	shortName := methName
+	if strings.HasSuffix(shortName, servName) {
+		index := strings.Index(shortName, servName)
+		shortName = shortName[0:index]
+	}
+
 	var b bytes.Buffer
 	err := generateSubcommandTemplate.Execute(&b, struct {
 		Name                      string
@@ -529,7 +535,7 @@ func (c *client) generateSubcommand(servName string, file *generator.FileDescrip
 		ServerStream              bool
 	}{
 		Name:                      methName,
-		UseName:                   strings.ToLower(methName),
+		UseName:                   strings.ToLower(shortName),
 		ServiceName:               servName,
 		FullName:                  servName + methName,
 		InputPackage:              "", /*importName TODO: fix - not needed for Tetrate's protos today*/
